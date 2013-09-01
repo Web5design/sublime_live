@@ -126,14 +126,14 @@ class LiveView:
         If LiveView doesn't have the attribute,
         see if it's View does and use that instead.
         """
-        if hasattr(self.view, name):
+        if self.view is not None and hasattr(self.view, name):
             attribute = getattr(self.view, name)
             if callable(attribute):
                 attribute = self.live_regions_to_regions(attribute)
             return attribute
         raise AttributeError('\'LiveView\' object has no attribute \'%s\'' % name)
 
-    def apply_settings(self, settings=None, use_defaults=True, read_only=None):
+    def apply_settings(self, settings=None, use_defaults=True, read_only=None, scratch=None):
         """
         Apply preset and supplied settings to the View.
         This also records the original state if you want to revert it later.
@@ -157,6 +157,9 @@ class LiveView:
         if read_only is not None:
             self.org_view_settings['read_only'] = self.is_read_only()
             self.set_read_only(read_only)
+        if scratch is not None:
+            self.org_view_settings['scratch'] = self.is_scratch()
+            self.set_scratch(scratch)
         view_settings = self.settings()
         for name, value in settings.items():
             if not name in self.org_view_settings:
@@ -172,6 +175,9 @@ class LiveView:
         read_only = self.org_view_settings.pop('read_only', None)
         if read_only is not None:
             self.set_read_only(read_only)
+        scratch = self.org_view_settings.pop('scratch', None)
+        if scratch is not None:
+            self.set_scratch(scratch)
         view_settings = self.settings()
         for name, value in self.org_view_settings.items():
             view_settings.set(name, value)
