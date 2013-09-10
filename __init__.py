@@ -45,7 +45,8 @@ def del_live_view(view, revert=True):
     """
     if has_live_view(view):
         live_view = get_live_view(view)
-        live_view.revert_settings()
+        if revert:
+            live_view.revert_settings()
         del LIVE_VIEWS[live_view.id()]
         del live_view
 
