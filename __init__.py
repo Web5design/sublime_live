@@ -70,7 +70,8 @@ class LiveView:
         name=None,
         process=None,
         pre_process=None,
-        post_process=None
+        post_process=None,
+        clear_selection=True
     ):
         if view is None and window is None:
             window = sublime.active_window()
@@ -91,6 +92,10 @@ class LiveView:
         # Used to store original view settings when we layer LiveView settings on top.
         # These can be used to reset the view settings when the live view is finished.
         self.org_view_settings = {}
+
+        # By default any caret selection is removed. This includes clicks.
+        # This stops items getting highlighted by the caret on click.
+        self.clear_selection = clear_selection
 
         # The click handling method/functions of the LiveView.
         # Optional fallback if we don't find a LiveRegion under a click
@@ -142,19 +147,20 @@ class LiveView:
         if settings is None:
             settings = {}
         if use_defaults:
-            settings.update(
-                {
-                    'rulers': [],
-                    'highlight_line': False,
-                    'fade_fold_buttons': True,
-                    'caret_style': 'solid',
-                    'line_numbers': False,
-                    'draw_white_space': 'none',
-                    'gutter': False,
-                    'word_wrap': False,
-                    'indent_guide_options': []
-                }
-            )
+            defaults = {
+                'rulers': [],
+                'highlight_line': False,
+                'fade_fold_buttons': True,
+                'caret_style': 'solid',
+                'line_numbers': False,
+                'draw_white_space': 'none',
+                'gutter': False,
+                'word_wrap': False,
+                'indent_guide_options': []
+            }
+            defaults.update(settings)
+            settings = defaults
+
         if read_only is not None:
             self.org_view_settings['read_only'] = self.is_read_only()
             self.set_read_only(read_only)
@@ -313,7 +319,8 @@ class LiveView:
                         self.post_process(self)
         # Should we make this optional?
         # Good for non editable LiveViews but may not be for others.
-        self.sel().clear()
+        if self.clear_selection:
+            self.sel().clear()
 
     def pre_process(self, live_view):
         pass
