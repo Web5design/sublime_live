@@ -6,6 +6,11 @@ REMINDERS:
  - When using dialogs, remember to reset the LiveView's last_click_time
    so it doesn't think the focusing back on the view after you click ok is another click.
 
+TODO:
+ - Update so that setting of attributes on LiveRegion or LiveView check the view or region first
+   before creating attribute on live_view or live_region.
+   e.g. live_region.a = 5  should equate to live_region.region.a = 5
+
 """
 
 import uuid
@@ -220,8 +225,8 @@ class LiveView:
         for live_region in self.live_regions.get(key, []):
             tmp_regions = self.view.get_regions(live_region._key)
             if tmp_regions:
-                live_region.a = tmp_regions[0].begin()
-                live_region.b = tmp_regions[0].end()
+                live_region.region.a = tmp_regions[0].begin()
+                live_region.region.b = tmp_regions[0].end()
                 regions.append(live_region)
         return regions
 
@@ -343,7 +348,7 @@ class LiveRegion:
     """
     def __init__(
         self,
-        a,
+        a=None,
         b=None,
         xpos=-1,
         process=None,
@@ -351,10 +356,9 @@ class LiveRegion:
         post_process=None,
         clickable=True
     ):
-        if isinstance(a, sublime.Region):
-            self.region = a
-        else:
-            self.region = sublime.Region(a, b, xpos)
+        self.region = None
+        if a is not None:
+            self.set_region(a, b, xpos)
         # The key the LiveRegion was added under.
         self.key = None
         # The actual unique key we added the LiveRegion under.
@@ -369,6 +373,19 @@ class LiveRegion:
         self.pre_process = self.pre_process if pre_process is None else pre_process
         self.post_process = self.post_process if post_process is None else post_process
 
+    def set_region(self, a, b=None, xpos=-1):
+        if isinstance(a, sublime.Region):
+            self.region = a
+        else:
+            if isinstance(self.region, sublime.Region):
+                self.region.a = a
+                self.region.b = b
+                self.region.xpos = xpos
+            else:
+                r = sublime.Region(a, b, xpos)
+                self.region = r
+        return self.region
+
     def __str__(self):
         return self.region.__str__()
 
@@ -377,7 +394,7 @@ class LiveRegion:
         If LiveRegio doesn't have the attribute,
         see if it's Region does and use that instead.
         """
-        if hasattr(self.region, name):
+        if self.region is not None and hasattr(self.region, name):
             return getattr(self.region, name)
         raise AttributeError('LiveRegion object has no attribute "%s"' % name)
 
@@ -394,8 +411,9 @@ class LiveRegion:
                 raise LiveError('LiveRegion had a key but no region in view.')
             if len(regions) > 1:
                 raise LiveError('LiveRegion had a key that returned more than one region from the view.')
-            self.a = regions[0].begin()
-            self.b = regions[0].end()
+            region = regions[0]
+            self.region.a = region.begin()
+            self.region.b = region.end()
         return self
 
     def process(self, live_region):
