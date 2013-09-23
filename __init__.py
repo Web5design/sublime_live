@@ -6,11 +6,6 @@ REMINDERS:
  - When using dialogs, remember to reset the LiveView's last_click_time
    so it doesn't think the focusing back on the view after you click ok is another click.
 
-TODO:
- - Update so that setting of attributes on LiveRegion or LiveView check the view or region first
-   before creating attribute on live_view or live_region.
-   e.g. live_region.a = 5  should equate to live_region.region.a = 5
-
 """
 
 import uuid
@@ -397,6 +392,22 @@ class LiveRegion:
         if self.region is not None and hasattr(self.region, name):
             return getattr(self.region, name)
         raise AttributeError('LiveRegion object has no attribute "%s"' % name)
+
+    @property
+    def a(self):
+        return self.region.a
+
+    @a.setter
+    def a(self, value):
+        self.region.a = value
+
+    @property
+    def b(self):
+        return self.region.b
+
+    @b.setter
+    def b(self, value):
+        self.region.b = value
 
     def id(self):
         return '%s-%s' % (self.__class__.__name__, id(self))
